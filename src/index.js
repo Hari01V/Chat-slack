@@ -1,30 +1,44 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Switch, useHistory, withRouter } from 'react-router-dom'
 
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 
 import 'semantic-ui-css/semantic.min.css';
 
+import firebase from './firebase';
+
 const Root = () => {
+  const history = useHistory();
+  useEffect(() => {
+    // listens for user and redirects to homepage if they go to login page manually
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        history.push('/');
+      }
+    });
+  }, []);
+
   return (
-    <Router>
-      <Switch>
-        <Route exact path="/" component={App} />
-        <Route exact path="/login" component={Login} />
-        <Route exact path="/register" component={Register} />
-      </Switch>
-    </Router>
+    <Switch>
+      <Route exact path="/" component={App} />
+      <Route exact path="/login" component={Login} />
+      <Route exact path="/register" component={Register} />
+    </Switch>
   )
 }
 
+const RootWithAuth = withRouter(Root);
+
 ReactDOM.render(
   <React.StrictMode>
-    <Root />
+    <Router>
+      <RootWithAuth />
+    </Router>
   </React.StrictMode>,
   document.getElementById('root')
 );
