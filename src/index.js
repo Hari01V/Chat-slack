@@ -7,38 +7,68 @@ import { BrowserRouter as Router, Route, Switch, useHistory, withRouter } from '
 
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import Spinner from './Spinner';
 
 import 'semantic-ui-css/semantic.min.css';
 
 import firebase from './firebase';
 
-const Root = () => {
+import { createStore } from 'redux';
+import { Provider, connect } from 'react-redux';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import rootReducer from './reducers';
+import { setUser, clearUser } from './actions';
+
+const store = createStore(rootReducer, composeWithDevTools());
+
+const Root = (props) => {
   const history = useHistory();
   useEffect(() => {
     // listens for user and redirects to homepage if they go to login page manually
     firebase.auth().onAuthStateChanged(user => {
       if (user) {
+        props.setUser(user);
         history.push('/');
+      } else {
+        history.push('/login');
+        props.clearUser();
       }
     });
   }, []);
 
   return (
-    <Switch>
-      <Route exact path="/" component={App} />
-      <Route exact path="/login" component={Login} />
-      <Route exact path="/register" component={Register} />
-    </Switch>
+    <>
+      {props.isLoading ?
+        <Spinner /> :
+        <Switch>
+          <Route exact path="/" component={App} />
+          <Route exact path="/login" component={Login} />
+          <Route exact path="/register" component={Register} />
+        </Switch>
+      }
+    </>
   )
 }
 
-const RootWithAuth = withRouter(Root);
+const mapStateFromProps = (state) => {
+  return {
+    isLoading: state.user.isLoading
+  }
+}
+
+const RootWithAuth = withRouter(
+  connect(
+    mapStateFromProps,
+    { setUser, clearUser }
+  )(Root));
 
 ReactDOM.render(
   <React.StrictMode>
-    <Router>
-      <RootWithAuth />
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <RootWithAuth />
+      </Router>
+    </Provider>
   </React.StrictMode>,
   document.getElementById('root')
 );
