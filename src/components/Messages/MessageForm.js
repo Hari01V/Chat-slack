@@ -139,7 +139,8 @@ export const MessageForm = (props) => {
           onClick={openModal}
           content="Upload Media"
           labelPosition="right"
-          icon="cloud upload" />
+          icon="cloud upload"
+          disabled={uploadState === 'uploading'} />
       </Button.Group>
       <FileModal modal={modal}
         closeModal={closeModal}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Segment, Comment } from 'semantic-ui-react';
+import { Segment, Comment, SearchResults } from 'semantic-ui-react';
 
 import { MessagesHeader } from "./MessagesHeader";
 import { MessageForm } from "./MessageForm";
@@ -12,6 +12,10 @@ export const Messages = (props) => {
   const [user, setUser] = useState(props.currentUser);
   const [messages, setMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(true);
+  const [numUniqueUsers, setNumUniqueUsers] = useState('-');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
   useEffect(() => {
     if (channel && user) {
@@ -34,6 +38,8 @@ export const Messages = (props) => {
         loadedMessages = newLoadedMessages;
         setMessages(newLoadedMessages);
         setMessagesLoading(false);
+
+        countUniqueUsers(loadedMessages);
       });
   }
 
@@ -45,12 +51,58 @@ export const Messages = (props) => {
     ))
   )
 
+  const displayChannelName = (channel) => {
+    return channel ? `#${channel.name}` : "";
+  }
+
+  const countUniqueUsers = (messages) => {
+    const uniqueUsers = messages.reduce((acc, message) => {
+      if (!acc.includes(message.user.name)) {
+        acc.push(message.user.name);
+      }
+      return acc;
+    }, []);
+    const numUniqueUsers = `${uniqueUsers.length} ${uniqueUsers.length > 1 ? 'Users' : 'User'}`;
+    setNumUniqueUsers(numUniqueUsers);
+  }
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setSearchLoading(true);
+  }
+
+  useEffect(() => {
+    if (searchLoading) {
+      handleSearchMessages();
+    }
+  }, [searchTerm, searchLoading]);
+
+  const handleSearchMessages = () => {
+    const channelMessages = [...messages];
+    const regex = new RegExp(searchTerm, 'gi');
+    const searchResults = channelMessages.reduce((acc, message) => {
+      if (message.content && message.content.match(regex) || message.user.name.match(regex)) {
+        acc.push(message);
+      }
+      return acc;
+    }, []);
+    setSearchResults(searchResults);
+    setTimeout(() => {
+      setSearchLoading(false);
+    }, 800);
+  }
+
   return (
     <>
-      <MessagesHeader />
+      <MessagesHeader
+        channelName={displayChannelName(channel)}
+        numUniqueUsers={numUniqueUsers}
+        handleSearchChange={handleSearchChange}
+        searchLoading={searchLoading} />
       <Segment>
         <Comment.Group className="messages">
-          {displayMessages(messages)}
+          {searchTerm ? displayMessages(searchResults) : displayMessages(messages)}
+          {/* {displayMessages(messages)} */}
         </Comment.Group>
       </Segment>
       <MessageForm messagesRef={messagesRef}
