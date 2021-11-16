@@ -9,12 +9,22 @@ export const DirectMessages = (props) => {
   const [usersRef, setUsersRef] = useState(firebase.database().ref('users'));
   const [connectedRef, setConnectedRef] = useState(firebase.database().ref('.info/connected'));
   const [presenceRef, setPresenceRef] = useState(firebase.database().ref('presence'));
+  const [changedUsers, setChangedUsers] = useState(false);
 
   useEffect(() => {
     if (user) {
       addListeners(user.uid);
     }
   }, []);
+
+  useEffect(() => {
+    if (users.length > 0 && !changedUsers) {
+      if (user) {
+        listeners(user.uid);
+      }
+      setChangedUsers(true);
+    }
+  }, [users]);
 
   const addListeners = (id) => {
     let loadedUsers = [];
@@ -30,6 +40,34 @@ export const DirectMessages = (props) => {
       }
     });
 
+    // connectedRef.on('value', snap => {
+    //   if (snap.val()) {
+    //     const ref = presenceRef.child(id);
+    //     ref.set(true);
+    //     ref.onDisconnect().remove(err => {
+    //       if (err !== null) {
+    //         console.log(err);
+    //       }
+    //     })
+    //   }
+    // });
+
+    // presenceRef.on('child_added', snap => {
+    //   if (id !== snap.key) {
+    //     console.log(users);
+    //     addStatusToUser(snap.key);
+    //   }
+    // });
+
+    // presenceRef.on('child_removed', snap => {
+    //   if (id !== snap.key) {
+    //     console.log(users);
+    //     addStatusToUser(snap.key, false);
+    //   }
+    // });
+  }
+
+  const listeners = (id) => {
     connectedRef.on('value', snap => {
       if (snap.val()) {
         const ref = presenceRef.child(id);
@@ -56,16 +94,13 @@ export const DirectMessages = (props) => {
   }
 
   const addStatusToUser = (userId, connected = true) => {
-    // if (users.length > 0) {
     const updatedUsers = users.reduce((acc, user) => {
-      if (user.uid == userId) {
+      if (user.uid === userId) {
         user['status'] = `${connected ? 'online' : 'offline'}`;
       }
-      return acc;
+      return acc.concat(user);
     }, []);
-    console.log(users);
-    setUsers(updatedUsers);
-    // }
+    setUsers([...updatedUsers]);
   }
 
   const isUserOnline = (user) => {
