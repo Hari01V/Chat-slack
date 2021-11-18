@@ -16,6 +16,8 @@ export const Messages = (props) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [privateChannel, setPrivateChannel] = useState(props.isPrivateChannel);
+  const [privateMessagesRef, setPrivateMessagesRef] = useState(firebase.database().ref('privateMessages'));
 
   useEffect(() => {
     if (channel && user) {
@@ -32,7 +34,8 @@ export const Messages = (props) => {
     // react wouldn't see that as a change - since the ref to the array 
     // isn't being changed - only content within it.
     let loadedMessages = [];
-    messagesRef.child(channelId)
+    const ref = getMessagesRef();
+    ref.child(channelId)
       .on('child_added', snap => {
         let newLoadedMessages = [...loadedMessages, snap.val()];
         loadedMessages = newLoadedMessages;
@@ -41,6 +44,10 @@ export const Messages = (props) => {
 
         countUniqueUsers(loadedMessages);
       });
+  }
+
+  const getMessagesRef = () => {
+    return privateChannel ? privateMessagesRef : messagesRef;
   }
 
   const displayMessages = (msgs) => (
@@ -52,7 +59,7 @@ export const Messages = (props) => {
   )
 
   const displayChannelName = (channel) => {
-    return channel ? `#${channel.name}` : "";
+    return channel ? `${privateChannel ? '@' : '#'} ${channel.name}` : "";
   }
 
   const countUniqueUsers = (messages) => {
@@ -98,7 +105,8 @@ export const Messages = (props) => {
         channelName={displayChannelName(channel)}
         numUniqueUsers={numUniqueUsers}
         handleSearchChange={handleSearchChange}
-        searchLoading={searchLoading} />
+        searchLoading={searchLoading}
+        privateChannel={privateChannel} />
       <Segment>
         <Comment.Group className="messages">
           {searchTerm ? displayMessages(searchResults) : displayMessages(messages)}
@@ -107,7 +115,9 @@ export const Messages = (props) => {
       </Segment>
       <MessageForm messagesRef={messagesRef}
         currentChannel={channel}
-        currentUser={user} />
+        currentUser={user}
+        isPrivateChannel={privateChannel}
+        getMessagesRef={getMessagesRef} />
     </>
   )
 }

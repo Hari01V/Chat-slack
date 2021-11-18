@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Menu, Icon } from "semantic-ui-react";
 
+import { connect } from 'react-redux';
+import { setCurrentChannel, setPrivateChannel } from '../../actions';
 import firebase from "../../firebase";
 
-export const DirectMessages = (props) => {
+const DirectMessages = (props) => {
   const [users, setUsers] = useState([]);
   const [user, setUser] = useState(props.currentUser);
   const [usersRef, setUsersRef] = useState(firebase.database().ref('users'));
   const [connectedRef, setConnectedRef] = useState(firebase.database().ref('.info/connected'));
   const [presenceRef, setPresenceRef] = useState(firebase.database().ref('presence'));
   const [changedUsers, setChangedUsers] = useState(false);
+  const [activeChannel, setActiveChannel] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -25,6 +28,23 @@ export const DirectMessages = (props) => {
       setChangedUsers(true);
     }
   }, [users]);
+
+  const changeChannel = (user) => {
+    const channelId = getChannelId(user.uid);
+    const channelData = {
+      id: channelId,
+      name: user.name
+    };
+    props.setCurrentChannel(channelData);
+    props.setPrivateChannel(true);
+    setActiveChannel(user.uid);
+  }
+
+  const getChannelId = (userId) => {
+    const currentUserId = user.uid;
+    return userId < currentUserId ?
+      `${userId}/${currentUserId}` : `${currentUserId}/${userId}`;
+  }
 
   const addListeners = (id) => {
     let loadedUsers = [];
@@ -118,7 +138,8 @@ export const DirectMessages = (props) => {
       {users.map(user => (
         <Menu.Item
           key={user.uid}
-          onClick={() => { }}
+          active={user.uid === activeChannel}
+          onClick={() => { changeChannel(user) }}
           style={{ opacity: 0.7, fontStyle: 'italic' }}>
           <Icon name="circle"
             color={isUserOnline(user) ? 'green' : 'red'} />
@@ -128,3 +149,8 @@ export const DirectMessages = (props) => {
     </Menu.Menu>
   )
 }
+
+export default connect(null, {
+  setCurrentChannel,
+  setPrivateChannel
+})(DirectMessages);
